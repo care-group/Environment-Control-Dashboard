@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AAL Project</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body onload="updateReadings();updatePollen();">
+
+  <script>
+  function loadPreferences(){
+    var xhttp = new XMLHttpRequest();
+          xhttp.onreadystatechange = function() {
+            if (this.readyState == 4) {
+              var data = JSON.parse(this.responseText);
+
+              console.log(data)
+    
+              document.getElementById('desired_temp').value = data.desired_temp;
+              document.getElementById('pollen_reduction').value = data.pollen_reduction;
+              document.getElementById('co2_reduction').value = data.co2_reduction;
+              document.getElementById('goal_strategy').value = data.goal_strategy;
+
+            }
+          }
+          xhttp.open("GET", '/preferences', true);
+          xhttp.setRequestHeader("Content-type", "application/json");
+          xhttp.send();
+  }
+  </script>
+
+  <div class="tab">
+      <button class="tablinks" onclick="openCity(event, 'DASHBOARD')">Dashboard</button>
+      <button class="tablinks" onclick="openCity(event, 'PREFERENCES'); loadPreferences();">Preferences</button>
+  </div>
+  
+  <div id="DASHBOARD" class="tabcontent">
+    <br><br>
+
+      <div class="container">
+          <div class="circle-content">
+              <div class="circle" id="temperature"></div>
+              <p class="below_circle" style="color: black;">Temperature (&degC)</p>
+          </div>
+          <div class="circle-content">
+              <div class="circle" id="pressure"></div>
+              <p class="below_circle" style="color: black;">Pressure (mbar)</p>
+          </div>
+          <div class="circle-content">
+              <div class="circle" id="noise"></div>
+              <p class="below_circle" style="color: black;">Noise (dB)</p>
+          </div>
+          <div class="circle-content">
+            <div class="circle" id="humidity"></div>
+            <p class="below_circle" style="color: black;">Humidity (%)</p>
+          </div>
+          <div class="circle-content">
+            <div class="circle" id="CO2"></div>
+            <p class="below_circle" style="color: black;">CO2 (ppm)</p>
+          </div>
+          <div class="circle-content">
+            <div class="circle" id="pollen"></div>
+            <p class="below_circle" style="color: black;">Pollen (outside)</p>
+          </div>
+      </div>
+
+      <br><br><br>
+
+    <!-- <div class="column"  style="font-weight: bold">
+      Temperature: <br>
+      Pressure: <br>
+      Noise: <br>
+      Humidity: <br>
+      CO2: <br>
+    </div>
+    <div class="column" style="width:20%">
+    <input type="text" name="temperature" id="temperature" size=6> &degC<br>
+    <input type="text" name="pressure" id="pressure" size=6> mbar<br>
+    <input type="text" name="noise" id="noise" size=6> dB<br>
+    <input type="text" name="humidity" id="humidity" size=6> %<br>
+    <input type="text" name="CO2" id="CO2" size=6> ppm<br>
+    </div> -->
+
+    <!-- <div class="column" style="font-weight: bold">
+      Pollen level: <br><br><br><br><br>
+    </div> -->
+    
+      <div class="column">
+        <script>
+        function updatePollen(){
+          var url = "http://socialpollencount.co.uk/api/forecast?location=[55.909576,-3.319974%5d";
+          var xhttp = new XMLHttpRequest();
+          xhttp.onreadystatechange = function() {
+            if (this.readyState == 4) {
+              var data = JSON.parse(this.responseText);
+              console.log(data);
+
+              pollen_level = data["forecast"][3]["pollen_count"]
+    
+              document.getElementById('pollen').innerHTML = pollen_level;
+
+            }
+          }
+          xhttp.open("GET", url, true);
+          xhttp.setRequestHeader("Content-type", "application/json");
+          xhttp.send();
+        }
+        </script>
+        <!-- <input type="text" name="pollen" id="pollen" size=10><br><br><br><br><br> -->
+      </div>
+
+      <hr>
+
+      <div class="suggestionBox" id="suggestionBox">
+        Press 'run' to initiate environment optimisation!
+      </div>
+
+      <hr>
+
+      <script>
+        function updateReadings() {
+          var xhttp = new XMLHttpRequest();
+          xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+              var data = JSON.parse(this.responseText);
+              console.log(data);
+    
+              var d = new Date(0);
+              d.setUTCSeconds(data.time_utc);
+    
+              document.getElementById('timestamp').innerHTML = "Last updated: " + d.toString();
+              document.getElementById('temperature').innerHTML = data.Temperature;
+              document.getElementById('pressure').innerHTML = data.Pressure;
+              document.getElementById('noise').innerHTML = data.Noise;
+              document.getElementById('humidity').innerHTML = data.Humidity;
+              document.getElementById('CO2').innerHTML = data.CO2;
+            }
+          }
+          xhttp.open("GET", "/latestData", true);
+          xhttp.setRequestHeader("Content-type", "application/json");
+          xhttp.send();
+        }  
+        </script>
+
+        <script>
+        function submitData(){
+          var temperature = document.getElementById('temperature').innerHTML;
+          var pressure = document.getElementById('pressure').innerHTML;
+          var noise = document.getElementById('noise').innerHTML;
+          var humidity = document.getElementById('humidity').innerHTML;
+          var CO2 = document.getElementById('CO2').innerHTML;
+          var pollen = document.getElementById('pollen').innerHTML;
+
+          var url = '/receiveData' + '?temperature=' + temperature + '&pressure=' + pressure + '&noise=' + noise + 
+                    '&humidity=' + humidity + '&CO2=' + CO2 + '&pollen=' + pollen
+
+          console.log(url)
+
+          var xhttp = new XMLHttpRequest();
+          xhttp.onreadystatechange = function() {
+            if (this.readyState == 4) {
+              var data = JSON.parse(this.responseText);
+              console.log(data);
+
+              // Set circle colours
+              document.getElementById('temperature').style.backgroundColor = data.temperature;
+              document.getElementById('pressure').style.backgroundColor = data.pressure;
+              document.getElementById('noise').style.backgroundColor = data.noise;
+              document.getElementById('humidity').style.backgroundColor = data.humidity;
+              document.getElementById('CO2').style.backgroundColor = data.CO2;
+              document.getElementById('pollen').style.backgroundColor = data.pollen;
+
+              // Update suggestion box
+              document.getElementById('suggestionBox').innerHTML = '';
+              
+              console.log(data.doThis)
+
+              for(i = 0; i < data.doThis.length; i++){
+                document.getElementById('suggestionBox').innerHTML = document.getElementById('suggestionBox').innerHTML + data.doThis[i] + '<br>'
+                if(data.doThis[i].substring(0, 7) == "Closing"){
+                  var xhttp = new XMLHttpRequest();
+                  xhttp.onreadystatechange = function() {
+                    if (this.readyState == 4 && this.status == 200) {
+                      var data = JSON.parse(this.responseText);
+                      console.log(data);
+                    }
+                  }
+                  xhttp.open("POST", "http://openhabian.local:8080/rest/items/LivingRoomLivingRoomBlindsLeft", true);
+                  xhttp.setRequestHeader("Content-type", "text/plain");
+                  xhttp.send(100);
+                }
+                else if(data.doThis[i].substring(0, 7) == "Opening"){
+                  var xhttp = new XMLHttpRequest();
+                  xhttp.onreadystatechange = function() {
+                    if (this.readyState == 4 && this.status == 200) {
+                      var data = JSON.parse(this.responseText);
+                      console.log(data);
+                    }
+                  }
+                  xhttp.open("POST", "http://openhabian.local:8080/rest/items/LivingRoomLivingRoomBlindsLeft", true);
+                  xhttp.setRequestHeader("Content-type", "text/plain");
+                  xhttp.send(0);
+                }
+              }
+            }
+          }
+          xhttp.open("POST", url, true);
+          xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+          xhttp.send();
+        }
+        </script>
+
+        <div id="timestamp" style="text-align: center; padding-top:15pt; padding-bottom: 20pt;">
+            Last updated: N/A
+        </div>
+        <button class="updateButton" onclick="updateReadings();updatePollen()">Update</button>
+        <button class="updateButton" onclick="submitData()">Run</button>
+        <br><br>
+
+  </div>
+  
+  <div id="PREFERENCES" class="tabcontent">
+    <div class="column">
+      Temp (&degC): <br>
+      Pollen reduction: <br>
+      Minimum CO2: <br>
+      <hr>
+      Goal Strategy: <br>
+      <hr>
+      <br>
+    </div>
+    <div class="column">
+        <form action="/items" method="POST">
+          <input type="text" name="desired_temp" id="desired_temp" size=3> <br>
+          <select name="pollen_reduction" id="pollen_reduction">
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select> <br>
+          <select name="co2_reduction" id="co2_reduction">
+              <option value="average">Average</option>
+              <option value="low">Low</option>
+          </select> <br>
+          <hr>
+          <select name="goal_strategy" id="goal_strategy">
+              <option value="cost_minimisation">Minimal Cost</option>
+              <option value="fastest">Fastest</option>
+          </select> <br>
+          <hr>
+          <button type="submit">Save All</button>
+        </form>
+    </div>
+  
+  </div>
+
+  <script>
+  function openCity(evt, cityName) {
+    var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tabcontent");
+    for (i = 0; i < tabcontent.length; i++) {
+      tabcontent[i].style.display = "none";
+    }
+    tablinks = document.getElementsByClassName("tablinks");
+    for (i = 0; i < tablinks.length; i++) {
+      tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+    document.getElementById(cityName).style.display = "block";
+    evt.currentTarget.className += " active";
+  }
+  </script>
+
+  <script src="main.js"></script>
+
+</body>
+</html>
